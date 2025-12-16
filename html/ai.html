@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Utah Adventure Map + Memory Match</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+  <style>
+    :root{
+      --desert-tan:#E7D3B1;
+      --deep-green:#4A653E;
+      --rusty-orange:#F2B278;
+      --warm-yellow:#FFDD6E;
+      --card-bg:#fff;
+      --accent:#FFE8A3;
+      --shadow: 0 6px 18px rgba(0,0,0,0.15);
+    }
+
+    html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--desert-tan);color:#213426;}
+    .site-nav{background:var(--deep-green);padding:12px 20px;box-shadow:0 2px 4px rgba(0,0,0,0.2);}
+    .nav-inner{display:flex;justify-content:space-between;align-items:center;max-width:1200px;margin:0 auto;}
+    .brand{color:var(--warm-yellow);font-weight:700;font-size:1.25rem;text-decoration:none;}
+    .nav-links a{margin-left:16px;text-decoration:none;color:var(--rusty-orange);font-weight:700;}
+    .nav-links a:hover{color:var(--accent);}
+    header h1{text-align:center;color:var(--deep-green);margin:20px 10px 6px;font-size:1.45rem;}
+    #map{height:55vh;width:92%;margin:10px auto;border-radius:12px;border:3px solid var(--deep-green);box-shadow:var(--shadow);}
+    .container{max-width:1200px;margin:0 auto;padding:0 12px 40px;}
+
+    .legend{
+      width:92%;max-width:1200px;margin:8px auto 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;
+      flex-wrap:wrap;
+    }
+    .legend .group{display:flex;gap:8px;align-items:center;background:#fff;padding:8px 12px;border-radius:10px;box-shadow:var(--shadow);}
+    .legend .group img{width:24px;height:24px;display:block;}
+
+    .game-panel{width:92%;max-width:1200px;margin:20px auto 60px;padding:16px;border-radius:12px;background:linear-gradient(180deg,#fff,#fbf7ec);box-shadow:var(--shadow);}
+    .game-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .game-controls{display:flex;gap:12px;align-items:center}
+    .btn{background:var(--deep-green);color:var(--warm-yellow);border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700}
+    .btn.secondary{background:var(--rusty-orange);color:#2b2b2b}
+    .score{font-weight:700;color:var(--deep-green)}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:12px;margin-top:14px}
+    .card{position:relative;cursor:pointer;height:90px;border-radius:10px;background:var(--card-bg);display:flex;align-items:center;justify-content:center;border:2px solid rgba(0,0,0,0.06);box-shadow:0 6px 10px rgba(0,0,0,0.08);transform-style:preserve-3d;transition:transform .45s}
+    .card.flipped{transform:rotateY(180deg)}
+    .face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:10px;backface-visibility:hidden}
+    .front{background:var(--deep-green);color:var(--warm-yellow);font-weight:900;font-size:20px}
+    .back{transform:rotateY(180deg);background:#fff}
+
+    @media (max-width:720px){
+      .grid{grid-template-columns:repeat(auto-fit,minmax(72px,1fr))}
+      .card{height:72px}
+    }
+
+    .popup-link{display:inline-block;margin-top:6px;padding:6px 8px;background:var(--rusty-orange);color:#111;font-weight:700;border-radius:6px;text-decoration:none}
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a class="brand" href="index.html">Home</a>
+      <div class="nav-links">
+        <a href="../index.html">Index</a>
+        <a href="resume.html">Resume</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="container">
+    <h1>Utah Adventure Map — Riding · Climbing · Golf · Ski · Skate</h1>
+  </header>
+
+  <div id="map" class="container"></div>
+
+  <div class="legend">
+    <div class="group"><img id="icon-riding" src="" alt="riding"> Riding</div>
+    <div class="group"><img id="icon-climbing" src="" alt="climbing"> Climbing</div>
+    <div class="group"><img id="icon-golf" src="" alt="golf"> Golf</div>
+    <div class="group"><img id="icon-ski" src="" alt="ski"> Ski</div>
+    <div class="group"><img id="icon-skate" src="" alt="skate"> Skate</div>
+  </div>
+
+  <section class="game-panel">
+    <div class="game-header">
+      <div>
+        <h2 style="margin:0;color:var(--deep-green)">Memory Match — Match hobby pairs</h2>
+        <div style="font-size:13px;color:#666;margin-top:6px">Flip cards and match the same hobby icons. Try to finish with the fewest flips!</div>
+      </div>
+
+      <div class="game-controls">
+        <div class="score">Score: <span id="score">0</span></div>
+        <button id="restart" class="btn secondary">Restart</button>
+      </div>
+    </div>
+
+    <div id="gameGrid" class="grid" aria-live="polite"></div>
+  </section>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ——— Icon set (high quality SVG / PNG) — shared for map and game
+    const ICONS = {
+  riding: 'https://cdn-icons-png.flaticon.com/512/252/252025.png',
+  climbing: 'https://cdn-icons-png.flaticon.com/512/190/190406.png',
+  golf: 'https://cdn-icons-png.flaticon.com/512/5894/5894244.png',
+  ski: 'https://cdn-icons-png.flaticon.com/512/9473/9473662.png',
+  skate: 'https://cdn-icons-png.flaticon.com/512/9159/9159654.png',
+};
+
+
+    // fill legend icons
+    document.getElementById('icon-riding').src = ICONS.riding;
+    document.getElementById('icon-climbing').src = ICONS.climbing;
+    document.getElementById('icon-golf').src = ICONS.golf;
+    document.getElementById('icon-ski').src = ICONS.ski;
+    document.getElementById('icon-skate').src = ICONS.skate;
+
+    // map init
+    const map = L.map('map').setView([39.3, -111.5], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
+
+    const icons = {};
+    for (const key in ICONS) {
+      icons[key] = L.icon({ iconUrl: ICONS[key], iconSize:[36,36], iconAnchor:[18,36] });
+    }
+
+    // sample locations with URLs
+    const locations = [
+      // Ski
+      {name:"Snowbird (Alta-Snowbird)",type:"ski",coords:[40.582,-111.657], url:"https://www.snowbird.com/"},
+      {name:"Alta Ski Area",type:"ski",coords:[40.588,-111.638], url:"https://www.alta.com/"},
+      {name:"Park City Mountain",type:"ski",coords:[40.654,-111.507], url:"https://www.parkcitymountain.com/"},
+      {name:"Deer Valley Resort",type:"ski",coords:[40.637,-111.478], url:"https://www.deervalley.com/"},
+      {name:"Snowbasin Ski Resort",type:"ski",coords:[41.298,-111.849], url:"https://www.snowbasin.com/"},
+      {name:"Brian Head Ski Resort",type:"ski",coords:[37.701,-112.843], url:"https://brianhead.com/"},
+
+      // Skateparks
+      {name:"Provo Skate Plaza",type:"skate",coords:[40.233,-111.660]},
+      {name:"Lehi Skatepark",type:"skate",coords:[40.391,-111.850]},
+      {name:"Layton Skatepark",type:"skate",coords:[41.067,-111.971]},
+      {name:"Ogden Skatepark",type:"skate",coords:[41.218,-111.974]},
+      {name:"St. George Skatepark",type:"skate",coords:[37.096,-113.568]},
+
+      // Riding / OHV / MTB
+      {name:"Moab – Slickrock Trails",type:"riding",coords:[38.573,-109.549]},
+      {name:"Five Mile Pass OHV",type:"riding",coords:[40.275,-112.17]},
+
+      // Climbing
+      {name:"Moab Climbing Areas",type:"climbing",coords:[38.573,-109.549], url:"https://www.moabclimbing.com/"},
+      {name:"Little / Big Cottonwood Canyon Climbing",type:"climbing",coords:[40.590,-111.65], url:"https://www.recreation.gov/amenity/recarea/rock-climbing-cottonwood-canyons"},
+      {name:"St. George / Zion Climbing Areas",type:"climbing",coords:[37.100,-113.580], url:"https://www.nps.gov/zion/index.htm"},
+
+      // Golf
+      {name:"Thanksgiving Point Golf Club (Lehi)",type:"golf",coords:[40.423,-111.887], url:"https://www.thanksgivingpointgolfclub.com/"},
+      {name:"Sand Hollow Golf Resort (Hurricane)",type:"golf",coords:[37.109,-113.297], url:"https://sandhollowresort.com/golf/"}
+    ];
+
+    locations.forEach(loc=>{
+      const m = L.marker(loc.coords, {icon: icons[loc.type]}).addTo(map);
+      let html = `<strong>${loc.name}</strong><br>${loc.type.toUpperCase()}`;
+      if (loc.url) {
+        html += `<br><a class="popup-link" href="${loc.url}" target="_blank" rel="noopener">Visit site</a>`;
+      }
+      m.bindPopup(html);
+    });
+
+    // Memory Match Game
+    const cardIcons = ICONS;  // use same icons
+    const hobbies = Object.keys(cardIcons);
+    let deck = [];
+    hobbies.forEach(h=>{deck.push({type:h,icon:cardIcons[h]});deck.push({type:h,icon:cardIcons[h]});});
+
+    function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    let first=null, second=null, lock=false, matches=0, flips=0;
+    const grid = document.getElementById('gameGrid');
+    const scoreEl = document.getElementById('score');
+    const restart = document.getElementById('restart');
+
+    function startGame(){
+      grid.innerHTML='';
+      deck = shuffle([...deck]);
+      first=null; second=null; lock=false; matches=0; flips=0;
+      scoreEl.textContent = flips;
+      deck.forEach((c,i)=>{
+        const card=document.createElement('div');
+        card.className='card'; card.dataset.typ=c.type; card.dataset.idx=i;
+        const front=document.createElement('div'); front.className='face front';
+        const img=document.createElement('img'); img.src=c.icon; img.alt=c.type; img.style.width='44px';
+        front.appendChild(img);
+        const back=document.createElement('div'); back.className='face back';
+        back.innerHTML = '<div style="text-align:center"><strong style="color:var(--deep-green)">?</strong></div>';
+        card.append(front,back);
+        card.addEventListener('click', ()=>{
+          if(lock || card===first) return;
+          card.classList.add('flipped');
+          if(!first){
+            first=card;
+          } else {
+            second=card; lock=true; flips +=1; scoreEl.textContent = flips;
+            if(first.dataset.typ === second.dataset.typ){
+              matches +=1;
+              setTimeout(() => {
+                first.style.visibility='hidden'; second.style.visibility='hidden';
+                reset(); if(matches === hobbies.length) setTimeout(()=>alert(`Great job! You matched all in ${flips} flips.`),200);
+              },400);
+            } else {
+              setTimeout(()=>{ first.classList.remove('flipped'); second.classList.remove('flipped'); reset(); },700);
+            }
+          }
+        });
+        grid.appendChild(card);
+      });
+    }
+    function reset(){ first=null; second=null; lock=false; }
+    restart.addEventListener('click', startGame);
+    startGame();
+  </script>
+</body>
+</html>

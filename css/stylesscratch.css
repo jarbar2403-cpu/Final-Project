@@ -1,0 +1,134 @@
+/* ===== Base Page Styles ===== */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #d8c7a1;
+    line-height: 1.6;
+    color: #333;
+}
+
+/* ===== Header ===== */
+header {
+    background: #3c546b;
+    color: #fff;
+    text-align: center;
+    padding: 1.5rem 0;
+}
+
+/* ===== Sections ===== */
+.section {
+    background: #ffffff;
+    margin: 20px auto;
+    padding: 20px;
+    max-width: 900px;
+    border-left: 8px solid #3c546b;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* ===== Headings ===== */
+.section h2 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #b45f36;
+}
+
+/* ===== Images ===== */
+.section img {
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+/* ===== Links ===== */
+a {
+    color: #0077cc;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* ===== Responsive Video ===== */
+.video-container {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    margin-top: 15px;
+}
+
+.video-container iframe {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    border: none;
+}
+
+/* ===== Tableau Embed ===== */
+.tableau-container {
+    width: 100%;
+    height: 600px;
+    margin-top: 15px;
+}
+
+.tableau-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+/* ===== Tableau Embed ===== */
+.tableau-container {
+    width: 100%;
+    height: 500px;
+    margin-top: 15px;
+}
+
+.tableau-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 10px;
+}
+/* ===== Navigation Bar ===== */
+.site-nav {
+    background-color: #3c636b; /* matches your header green */
+    padding: 12px 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+.nav-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.site-nav a {
+    color: #ffffff;
+    text-decoration: none;
+    font-family: Arial, sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.site-nav a:hover {
+    text-decoration: underline;
+}
+
+.brand {
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+.nav-links a {
+    margin-left: 20px;
+}
